@@ -1,0 +1,63 @@
+// ==UserScript==
+// @name         Remove Yt Shorts Recomendation
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  Delete auto suggestion youtube short (2-10th video) and navigation down button
+// @author       FadhilAF
+// @match        https://www.youtube.com/*
+// @icon         https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Youtube_shorts_icon.svg/193px-Youtube_shorts_icon.svg.png
+// @grant        none
+// @run-at        document-idle
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    //ytShorts container observer
+    const ytShortsObserver = new MutationObserver(records=>{setTimeout(()=>{
+        //yt-shorts container
+        const ytShorts = document.getElementById('shorts-inner-container')
+
+        records.map((record)=>{
+
+            if(record.addedNodes[1].id!=="0"){//idk how this addedNodes object present node data, but the object at the 1 index of the list provide the youtube shorts video id
+
+                ytShorts.removeChild(ytShorts.children[1])//remove the second yt-shorts video (meaning the recommended video, and the next recommended video on the next index is moving 1 index up)
+            }
+        })
+
+        //navigate down button element
+        let downButton = document.getElementById('navigation-button-down')
+        //removeing the navigate down button element
+        downButton.parentElement.removeChild(downButton)
+    },0)//youtube will be confused if we do it immediately
+    })
+
+    //page manager element on youtube to control whether its showing feed or youtube short (if you haven't opened a youtube shorts video from the first time you open/refresh youtube.com, yt-shorts container not yet added)
+    var ytPageManager = document.getElementById('page-manager')
+    //observer to observe when youtube shorts container added
+    const pageManagerObserver = new MutationObserver(records=>{
+        records.map((record)=>{
+            if(record.addedNodes.length != 0) {//if the children of this element added, then youtube shorts container already added
+
+                //yt shorts container element
+                const ytShorts = document.getElementById('shorts-inner-container')
+                ytShortsObserver.observe(ytShorts, { childList: true })
+
+                pageManagerObserver.disconnect()
+            }
+        })
+    })
+
+    //check if there already a youtube short container or not
+    if (document.getElementById('shorts-inner-container')) {
+        //yt shorts inner container element
+        const ytShorts = document.getElementById('shorts-inner-container')
+
+        ytShortsObserver.observe(ytShorts, { childList: true })
+    } else {
+        //if not then observe the yt page manager
+        pageManagerObserver.observe(ytPageManager, {childList: true})
+    }
+
+})();
